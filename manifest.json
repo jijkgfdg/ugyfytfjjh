@@ -1,26 +1,16 @@
 {
   "name": "日本麻將拍照算點",
   "short_name": "麻將算點",
-  "description": "日本麻將點數計算，支援安卓 Chrome 加入主畫面。",
+  "description": "用相機拍日本麻將手牌，或手動輸入牌型與點數條件。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#0f172a",
-  "orientation": "portrait",
   "lang": "zh-TW",
   "icons": [
-    {
-      "src": "./icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    {"src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ]
 }
