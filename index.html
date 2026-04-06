@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>日本麻將拍照算點</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --primary: #0f172a;
+      --accent: #059669;
+      --warn-bg: #fffbeb;
+      --warn-line: #fcd34d;
+      --warn-text: #92400e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #ecfdf5 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    }
+    .hero, .card {
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(255,255,255,.8);
+      border-radius: 24px;
+      box-shadow: 0 18px 40px rgba(15,23,42,.08);
+      padding: 18px;
+    }
+    .hero { margin-bottom: 16px; }
+    .title { font-size: 28px; font-weight: 800; margin: 8px 0; }
+    .sub { color: var(--muted); line-height: 1.6; font-size: 14px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
+      border-radius: 999px; background: #d1fae5; color: #065f46; font-size: 13px; font-weight: 700;
+    }
+    .row { display: grid; gap: 16px; }
+    @media (min-width: 900px) {
+      .row-2 { grid-template-columns: 1.15fr .85fr; }
+      .row-hero { grid-template-columns: 1.2fr .8fr; align-items: end; }
+    }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (min-width: 900px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat { background: #f8fafc; border: 1px solid var(--line); border-radius: 18px; padding: 12px; }
+    .stat .k { color: var(--muted); font-size: 12px; }
+    .stat .v { font-size: 14px; font-weight: 800; margin-top: 4px; }
+    .tabs, .seg {
+      display: flex; flex-wrap: wrap; gap: 8px; background: #f1f5f9; padding: 8px; border-radius: 18px;
+    }
+    button, select, input {
+      font: inherit;
+    }
+    .seg button, .tabs button, .btn {
+      border: 1px solid var(--line); background: white; color: #334155; padding: 10px 14px;
+      border-radius: 16px; cursor: pointer; font-weight: 700;
+    }
+    .seg button.active, .tabs button.active, .btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn.accent { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .preview {
+      position: relative; overflow: hidden; border-radius: 22px; border: 1px solid var(--line);
+      background: #020617; aspect-ratio: 4/3;
+    }
+    video, img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .preview-label {
+      position: absolute; left: 12px; top: 12px; padding: 6px 10px; border-radius: 999px;
+      background: rgba(0,0,0,.6); color: white; font-size: 12px; backdrop-filter: blur(4px);
+    }
+    .preview-box { position: absolute; inset: 24px; border: 2px solid rgba(52,211,153,.7); border-radius: 20px; pointer-events: none; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (min-width: 700px) { .actions { display: flex; flex-wrap: wrap; } }
+    .section-title { font-size: 20px; font-weight: 800; margin: 0 0 6px; }
+    .section-sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 16px; }
+    .notice {
+      background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-text);
+      border-radius: 18px; padding: 14px; line-height: 1.7; font-size: 14px;
+    }
+    .dark {
+      background: #020617; color: white; border-color: #0f172a;
+    }
+    .dark .muted { color: #cbd5e1; }
+    .grid-2 { display: grid; gap: 12px; }
+    .grid-3 { display: grid; gap: 12px; }
+    @media (min-width: 700px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    }
+    .value {
+      font-size: 30px; font-weight: 900; color: #6ee7b7;
+    }
+    .small { font-size: 12px; color: var(--muted); }
+    .tile-list, .chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip, .tile {
+      border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; background: #f8fafc; font-weight: 700;
+    }
+    .field { display: grid; gap: 8px; }
+    .field label { font-size: 14px; font-weight: 700; color: #334155; }
+    .stepper { display: flex; align-items: center; gap: 8px; }
+    .stepper button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: white; font-size: 20px; }
+    .stepper .box { min-width: 70px; text-align: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: white; font-weight: 800; }
+    .fu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (min-width: 700px) { .fu-grid { grid-template-columns: repeat(6, 1fr); } }
+    .fu-grid button { border: 1px solid var(--line); background: white; border-radius: 12px; padding: 10px; font-weight: 700; }
+    .fu-grid button.active { background: var(--primary); border-color: var(--primary); color: white; }
+    .hidden { display: none !important; }
+    .list div { background: #f8fafc; border-radius: 14px; padding: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="row row-hero">
+        <div>
+          <div class="badge" id="installBadge">PWA 可安裝版</div>
+          <div class="sub" style="margin-top:10px;">
+            狀態：<strong id="installStatus">瀏覽器模式</strong> ・ 網路：<strong id="onlineStatus">線上</strong><br>
+            上傳到 HTTPS 網址後，用安卓 Chrome 開啟，按「加入主畫面」就會像 App 一樣放到桌面。
+          </div>
+        </div>
+        <div class="actions" style="align-self:center;">
+          <button class="btn primary" id="installBtn">加入主畫面</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero row row-hero">
+      <div>
+        <div class="badge">安卓立即可用版</div>
+        <div class="title">日本麻將拍照算點</div>
+        <div class="sub">
+          這份是給你自己馬上用的版本：可拍照、可上傳照片、可手動修正、可直接算點。<br>
+          真正的「自動辨識牌面」需要再接模型或 API，這一版不假裝有做完那一塊。
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="k">模式</div><div class="v">拍照 / 手動</div></div>
+        <div class="stat"><div class="k">用途</div><div class="v">自己立即使用</div></div>
+        <div class="stat"><div class="k">相機</div><div class="v">HTTPS 可用</div></div>
+        <div class="stat"><div class="k">備援</div><div class="v">本地也能手算</div></div>
+      </div>
+    </div>
+
+    <div class="notice" style="margin-bottom:16px;">
+      最快使用方式：把這個 HTML 上傳到任何 <strong>HTTPS 靜態空間</strong>，再用安卓 Chrome 打開，就能直接用相機。<br>
+      如果你只是先下載到手機本地打開，<strong>手動計分可用</strong>，但相機通常會受瀏覽器安全限制。
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="tabs">
+        <button id="tabCamera" class="active">相機 / 照片</button>
+        <button id="tabManual">人工輸入</button>
+      </div>
+    </div>
+
+    <div id="cameraPage" class="row row-2">
+      <div class="row">
+        <div class="card">
+          <div class="section-title">拍照與上傳</div>
+          <div class="section-sub">可用安卓 Chrome 開相機，或直接上傳相簿照片作為對照。</div>
+          <div class="row row-2">
+            <div>
+              <div class="preview">
+                <video id="video" playsinline muted></video>
+                <img id="capturedImg" class="hidden" alt="captured image">
+                <div class="preview-label" id="previewLabel">尚未開啟相機</div>
+                <div class="preview-box"></div>
+              </div>
+              <canvas id="canvas" class="hidden"></canvas>
+              <div class="actions" style="margin-top:12px;">
+                <button class="btn primary" id="startCamBtn">開啟相機</button>
+                <button class="btn" id="stopCamBtn">關閉相機</button>
+                <button class="btn accent" id="captureBtn" disabled>拍照擷取</button>
+                <button class="btn" id="uploadBtn">上傳照片</button>
+                <input id="fileInput" type="file" accept="image/*" class="hidden">
+              </div>
+              <div id="cameraError" class="notice hidden" style="margin-top:12px;"></div>
+            </div>
+            <div class="row">
+              <div class="panel">
+                <div class="section-title" style="font-size:16px;">現在就能做的事</div>
+                <div class="list small" style="display:grid; gap:10px; margin-top:10px; font-size:14px; color:#475569;">
+                  <div>1. 用相機拍你的牌面或分數表。</div>
+                  <div>2. 切到人工輸入，直接把翻數、符數、莊閒輸入。</div>
+                  <div>3. 立即得到榮和 / 自摸點數。</div>
+                </div>
+              </div>
+              <div class="notice">
+                這版是「你現在就能用」的版本，所以我把重點放在：<br>
+                <strong>手機可拍照 + 手動修正 + 正確算點</strong>。<br>
+                自動辨識牌面沒有在這份檔案裡硬做假的結果。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card dark">
+          <div class="section-title">計算結果</div>
+          <div class="section-sub muted">相機頁這裡會顯示目前輸入的點數結果。</div>
+          <div class="grid-2">
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);">
+              <div class="small" style="color:#cbd5e1;">和牌等級</div>
+              <div id="resultLabelCamera" style="font-size:24px; font-weight:900; margin-top:8px;">一般手</div>
+            </div>
+            <div class="panel" style="background: rgba(16,185,129,.15); border-color: rgba(52,211,153,.2);">
+              <div class="small" style="color:#a7f3d0;">最終獲得</div>
+              <div id="resultTotalCamera" class="value">0 點</div>
+            </div>
+          </div>
+          <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1); margin-top:12px;">
+            <div id="resultBreakdownCamera">請先在人工輸入頁面輸入翻數與符數。</div>
+          </div>
+          <div class="grid-3" style="margin-top:12px;">
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);"><div class="small" style="color:#cbd5e1;">和牌點</div><div id="coreCamera" style="font-weight:900; margin-top:8px;">0</div></div>
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);"><div class="small" style="color:#cbd5e1;">場棒</div><div id="honbaCamera" style="font-weight:900; margin-top:8px;">0</div></div>
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);"><div class="small" style="color:#cbd5e1;">立直棒</div><div id="stickCamera" style="font-weight:900; margin-top:8px;">0</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="manualPage" class="row row-2 hidden">
+      <div class="row">
+        <div class="card">
+          <div class="section-title">人工輸入</div>
+          <div class="section-sub">這是現在最穩定、你下載就能立刻用的部分。</div>
+          <div class="row" style="gap:14px;">
+            <div class="grid-2">
+              <div class="field">
+                <label>計算模式</label>
+                <div class="seg" id="modeSeg">
+                  <button data-value="regular" class="active">一般手</button>
+                  <button data-value="yakuman">役滿</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>身分</label>
+                <div class="seg" id="dealerSeg">
+                  <button data-value="child" class="active">子家</button>
+                  <button data-value="dealer">莊家</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>和牌方式</label>
+                <div class="seg" id="winSeg">
+                  <button data-value="ron" class="active">榮和</button>
+                  <button data-value="tsumo">自摸</button>
+                </div>
+              </div>
+              <div class="field" id="hanField">
+                <label>翻數</label>
+                <div class="stepper">
+                  <button id="hanMinus">−</button>
+                  <div class="box" id="hanValue">3</div>
+                  <button id="hanPlus">＋</button>
+                </div>
+              </div>
+              <div class="field hidden" id="yakumanField">
+                <label>役滿倍數</label>
+                <div class="stepper">
+                  <button id="yakMinus">−</button>
+                  <div class="box" id="yakValue">1</div>
+                  <button id="yakPlus">＋</button>
+                </div>
+              </div>
+              <div class="field" style="grid-column: 1 / -1;" id="fuField">
+                <label>符數</label>
+                <div class="fu-grid" id="fuGrid"></div>
+              </div>
+              <div class="field">
+                <label>場棒（本場）</label>
+                <div class="stepper">
+                  <button id="honbaMinus">−</button>
+                  <div class="box" id="honbaValueBox">0</div>
+                  <button id="honbaPlus">＋</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>立直棒</label>
+                <div class="stepper">
+                  <button id="stickMinus">−</button>
+                  <div class="box" id="stickValueBox">0</div>
+                  <button id="stickPlus">＋</button>
+                </div>
+              </div>
+            </div>
+            <div class="notice">
+              提示：<br>
+              20 符常見於平和自摸，25 符通常對應七對子。<br>
+              這個版本專注在算點，不會檢查手牌是否合法。
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card dark">
+          <div class="section-title">人工輸入點數</div>
+          <div class="section-sub muted">這是最穩定可立即使用的功能。</div>
+          <div class="grid-2">
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);">
+              <div class="small" style="color:#cbd5e1;">和牌等級</div>
+              <div id="resultLabel" style="font-size:24px; font-weight:900; margin-top:8px;">一般手</div>
+            </div>
+            <div class="panel" style="background: rgba(16,185,129,.15); border-color: rgba(52,211,153,.2);">
+              <div class="small" style="color:#a7f3d0;">最終獲得</div>
+              <div id="resultTotal" class="value">0 點</div>
+            </div>
+          </div>
+          <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1); margin-top:12px;">
+            <div id="resultBreakdown">-</div>
+          </div>
+          <div class="grid-3" style="margin-top:12px;">
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);"><div class="small" style="color:#cbd5e1;">和牌點</div><div id="core" style="font-weight:900; margin-top:8px;">0</div></div>
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);"><div class="small" style="color:#cbd5e1;">場棒</div><div id="honbaResult" style="font-weight:900; margin-top:8px;">0</div></div>
+            <div class="panel" style="background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1);"><div class="small" style="color:#cbd5e1;">立直棒</div><div id="stickResult" style="font-weight:900; margin-top:8px;">0</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FU_OPTIONS = [20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 110];
+
+    let deferredPrompt = null;
+
+    function updateOnlineStatus() {
+      const online = navigator.onLine;
+      $('onlineStatus').textContent = online ? '線上' : '離線';
+    }
+
+    function setInstallState(text) {
+      $('installStatus').textContent = text;
+    }
+
+    async function promptInstall() {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setInstallState('已安裝');
+        return;
+      }
+      if (!deferredPrompt) {
+        alert('如果沒有跳出安裝視窗，請用安卓 Chrome 右上角選單 → 加入主畫面。');
+        return;
+      }
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice && choice.outcome === 'accepted') {
+        setInstallState('安裝中');
+      } else {
+        setInstallState('已取消安裝');
+      }
+      deferredPrompt = null;
+    }
+
+    async function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('./sw.js');
+        } catch (e) {
+          console.warn('service worker register failed', e);
+        }
+      }
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      setInstallState('可安裝');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      setInstallState('已安裝');
+    });
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+
+    const state = {
+      mode: 'regular',
+      isDealer: false,
+      winType: 'ron',
+      han: 3,
+      fu: 40,
+      yakumanCount: 1,
+      honba: 0,
+      riichiSticks: 0,
+      stream: null,
+      captured: false,
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const tabCamera = $('tabCamera');
+    const tabManual = $('tabManual');
+    const cameraPage = $('cameraPage');
+    const manualPage = $('manualPage');
+    const video = $('video');
+    const capturedImg = $('capturedImg');
+    const canvas = $('canvas');
+    const previewLabel = $('previewLabel');
+    const cameraError = $('cameraError');
+
+    function setTab(tab) {
+      const isCamera = tab === 'camera';
+      tabCamera.classList.toggle('active', isCamera);
+      tabManual.classList.toggle('active', !isCamera);
+      cameraPage.classList.toggle('hidden', !isCamera);
+      manualPage.classList.toggle('hidden', isCamera);
+    }
+
+    tabCamera.onclick = () => setTab('camera');
+    tabManual.onclick = () => setTab('manual');
+
+    function round100(n) { return Math.ceil(n / 100) * 100; }
+
+    function getRegularBasePoints(han, fu) {
+      if (han >= 13) return { basePoints: 8000, label: '數滿役滿' };
+      if (han >= 11) return { basePoints: 6000, label: '三倍滿' };
+      if (han >= 8) return { basePoints: 4000, label: '倍滿' };
+      if (han >= 6) return { basePoints: 3000, label: '跳滿' };
+      if (han === 5 || (han === 4 && fu >= 40) || (han === 3 && fu >= 70)) return { basePoints: 2000, label: '滿貫' };
+      return { basePoints: fu * Math.pow(2, han + 2), label: '一般手' };
+    }
+
+    function calculatePoints() {
+      const info = state.mode === 'yakuman'
+        ? { basePoints: 8000 * state.yakumanCount, label: state.yakumanCount === 1 ? '役滿' : `${state.yakumanCount}倍役滿` }
+        : getRegularBasePoints(state.han, state.fu);
+
+      const stickValue = state.riichiSticks * 1000;
+
+      if (state.winType === 'ron') {
+        const ronCore = round100(info.basePoints * (state.isDealer ? 6 : 4));
+        const honbaValue = state.honba * 300;
+        return {
+          label: info.label,
+          total: ronCore + honbaValue + stickValue,
+          breakdown: `放槍者支付 ${ronCore.toLocaleString()} 點`,
+          coreTotal: ronCore,
+          honbaValue,
+          stickValue,
+        };
+      }
+
+      if (state.isDealer) {
+        const each = round100(info.basePoints * 2);
+        const eachWithHonba = each + state.honba * 100;
+        return {
+          label: info.label,
+          total: eachWithHonba * 3 + stickValue,
+          breakdown: `三家各支付 ${each.toLocaleString()} 點`,
+          coreTotal: each * 3,
+          honbaValue: state.honba * 300,
+          stickValue,
+        };
+      }
+
+      const dealerPay = round100(info.basePoints * 2);
+      const childPay = round100(info.basePoints);
+      return {
+        label: info.label,
+        total: dealerPay + childPay * 2 + state.honba * 300 + stickValue,
+        breakdown: `莊家支付 ${dealerPay.toLocaleString()} 點，其他兩家各支付 ${childPay.toLocaleString()} 點`,
+        coreTotal: dealerPay + childPay * 2,
+        honbaValue: state.honba * 300,
+        stickValue,
+      };
+    }
+
+    function renderResult() {
+      const r = calculatePoints();
+      $('resultLabel').textContent = r.label;
+      $('resultTotal').textContent = `${r.total.toLocaleString()} 點`;
+      $('resultBreakdown').textContent = r.breakdown;
+      $('core').textContent = r.coreTotal.toLocaleString();
+      $('honbaResult').textContent = r.honbaValue.toLocaleString();
+      $('stickResult').textContent = r.stickValue.toLocaleString();
+
+      $('resultLabelCamera').textContent = r.label;
+      $('resultTotalCamera').textContent = `${r.total.toLocaleString()} 點`;
+      $('resultBreakdownCamera').textContent = r.breakdown;
+      $('coreCamera').textContent = r.coreTotal.toLocaleString();
+      $('honbaCamera').textContent = r.honbaValue.toLocaleString();
+      $('stickCamera').textContent = r.stickValue.toLocaleString();
+    }
+
+    function bindSeg(containerId, handler) {
+      const box = $(containerId);
+      [...box.querySelectorAll('button')].forEach(btn => {
+        btn.onclick = () => {
+          [...box.querySelectorAll('button')].forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          handler(btn.dataset.value);
+          renderFields();
+          renderResult();
+        };
+      });
+    }
+
+    bindSeg('modeSeg', (value) => state.mode = value);
+    bindSeg('dealerSeg', (value) => state.isDealer = value === 'dealer');
+    bindSeg('winSeg', (value) => state.winType = value);
+
+    function step(btnMinus, btnPlus, getter, setter, min, max, displayId) {
+      $(btnMinus).onclick = () => { setter(Math.max(min, getter() - 1)); $(displayId).textContent = getter(); renderResult(); renderFields(); };
+      $(btnPlus).onclick = () => { setter(Math.min(max, getter() + 1)); $(displayId).textContent = getter(); renderResult(); renderFields(); };
+    }
+
+    step('hanMinus', 'hanPlus', () => state.han, v => state.han = v, 1, 20, 'hanValue');
+    step('yakMinus', 'yakPlus', () => state.yakumanCount, v => state.yakumanCount = v, 1, 6, 'yakValue');
+    step('honbaMinus', 'honbaPlus', () => state.honba, v => state.honba = v, 0, 20, 'honbaValueBox');
+    step('stickMinus', 'stickPlus', () => state.riichiSticks, v => state.riichiSticks = v, 0, 20, 'stickValueBox');
+
+    function renderFuGrid() {
+      const box = $('fuGrid');
+      box.innerHTML = '';
+      FU_OPTIONS.forEach(fu => {
+        const btn = document.createElement('button');
+        btn.textContent = fu;
+        if (state.fu === fu) btn.classList.add('active');
+        btn.onclick = () => {
+          state.fu = fu;
+      
+    $('installBtn').onclick = promptInstall;
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setInstallState('已安裝');
+    } else {
+      setInstallState('瀏覽器模式');
+    }
+    updateOnlineStatus();
+    registerServiceWorker();
+
+    renderFuGrid();
+          renderResult();
+        };
+        box.appendChild(btn);
+      });
+    }
+
+    function renderFields() {
+      $('hanField').classList.toggle('hidden', state.mode !== 'regular');
+      $('fuField').classList.toggle('hidden', state.mode !== 'regular');
+      $('yakumanField').classList.toggle('hidden', state.mode !== 'yakuman');
+    }
+
+    async function startCamera() {
+      cameraError.classList.add('hidden');
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        state.stream = stream;
+        video.srcObject = stream;
+        await video.play();
+        $('captureBtn').disabled = false;
+        previewLabel.textContent = '相機預覽中';
+      } catch (e) {
+        cameraError.textContent = '無法開啟相機。請確認你是用 HTTPS 網址開啟，並允許瀏覽器相機權限。';
+        cameraError.classList.remove('hidden');
+      }
+    }
+
+    function stopCamera() {
+      if (state.stream) {
+        state.stream.getTracks().forEach(track => track.stop());
+        state.stream = null;
+      }
+      video.srcObject = null;
+      $('captureBtn').disabled = true;
+      previewLabel.textContent = state.captured ? '已擷取畫面' : '尚未開啟相機';
+    }
+
+    function capture() {
+      if (!video.videoWidth) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      capturedImg.src = canvas.toDataURL('image/jpeg', 0.92);
+      capturedImg.classList.remove('hidden');
+      video.classList.add('hidden');
+      state.captured = true;
+      previewLabel.textContent = '已擷取畫面';
+    }
+
+    $('startCamBtn').onclick = async () => {
+      capturedImg.classList.add('hidden');
+      video.classList.remove('hidden');
+      state.captured = false;
+      await startCamera();
+    };
+    $('stopCamBtn').onclick = stopCamera;
+    $('captureBtn').onclick = capture;
+    $('uploadBtn').onclick = () => $('fileInput').click();
+    $('fileInput').onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        stopCamera();
+        capturedImg.src = reader.result;
+        capturedImg.classList.remove('hidden');
+        video.classList.add('hidden');
+        state.captured = true;
+        previewLabel.textContent = '已載入照片';
+      };
+      reader.readAsDataURL(file);
+    };
+
+
+    $('installBtn').onclick = promptInstall;
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setInstallState('已安裝');
+    } else {
+      setInstallState('瀏覽器模式');
+    }
+    updateOnlineStatus();
+    registerServiceWorker();
+
+    renderFuGrid();
+    renderFields();
+    renderResult();
+  </script>
+</body>
+</html>
